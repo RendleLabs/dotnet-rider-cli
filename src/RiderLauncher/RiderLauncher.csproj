@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <TieredCompilation>true</TieredCompilation>
+    <Version>1.0.0</Version>
+    <AssemblyName>dotnet-rider</AssemblyName>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageOutputPath>..\..\artifacts\$(Configuration)</PackageOutputPath>
+    <PackageId>dotnet-rider-cli</PackageId>
+    <Description>Global dotnet tool for launching Toolbox Rider from the command line.</Description>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageReleaseNotes>Initial version</PackageReleaseNotes>
+    <Copyright>Copyright (C) 2018 RendleLabs</Copyright>
+    <PackageTags>jetbrains rider</PackageTags>
+    <PackageProjectUrl>https://github.com/rendlelabs/dotnet-rider-cli</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/RendleLabs/dotnet-rider-cli/blob/master/LICENSE</PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/rendlelabs/dotnet-rider-cli</RepositoryUrl>
+    <PackAsTool>True</PackAsTool>
+    <ToolCommandName>rider</ToolCommandName>
+  </PropertyGroup>
+
+</Project>
