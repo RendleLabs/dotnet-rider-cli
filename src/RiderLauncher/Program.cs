@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -8,33 +7,39 @@ namespace RiderLauncher
 {
     class Program
     {
-        static readonly Regex VersionNumberExtractor = new Regex(@"[0-9]+\.[0-9]+\.[0-9]+");
+        private const string IfThisMakesYouSad = "If this makes you sad, please open an issue at https://github.com/RendleLabs/dotnet-rider-cli";
+
         static void Main(string[] args)
         {
-            var folderPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                @"JetBrains\Toolbox\apps\Rider"
-            );
-            
-            if (Directory.Exists(folderPath))
+            if (Environment.OSVersion.Platform != PlatformID.Win32NT)
             {
-                var latest = Directory.EnumerateFiles(folderPath, "rider64.exe", SearchOption.AllDirectories)
-                    .OrderByDescending(f => VersionNumberExtractor.Match(f).Value)
-                    .FirstOrDefault();
-
-                if (latest != null)
-                {
-                    var arguments = string.Join(" ", args.Select(a => a.Contains(' ') ? $"\"{a}\"" : a));
-                    Console.WriteLine($"Starting: {latest} {arguments}");
-                    var psi = new ProcessStartInfo
-                    {
-                        UseShellExecute = true,
-                        FileName = latest,
-                        Arguments = arguments
-                    };
-                    Process.Start(psi);
-                }
+                Console.Error.WriteLine($"This tool only works on Windows. {IfThisMakesYouSad}");
             }
+            
+            if (ToolboxRiderFinder.TryGetLatestActiveExecutable(out var activeExecutable))
+            {
+                StartRider(activeExecutable, args);
+            }
+            else
+            {
+                Console.WriteLine($"Couldn't find Rider install location. {IfThisMakesYouSad}");
+            }
+        }
+
+        private static void StartRider(string riderExe, string[] args)
+        {
+            var arguments = string.Join(" ", args.Select(a => a.Contains(' ') ? $"\"{a}\"" : a));
+            
+            Console.WriteLine($"Starting: {riderExe} {arguments}");
+            
+            var psi = new ProcessStartInfo
+            {
+                UseShellExecute = true,
+                FileName = riderExe,
+                Arguments = arguments
+            };
+            
+            Process.Start(psi);
         }
     }
 }
