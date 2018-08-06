@@ -52,10 +52,10 @@ namespace RiderLauncher
 
         private static string GetAppLocation()
         {
-            var settingsPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                @"JetBrains\Toolbox\.settings.json"
-            );
+            var toolboxPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "JetBrains", "Toolbox");
+            var settingsPath = Path.Combine(toolboxPath, ".settings.json");
+            
             if (File.Exists(settingsPath))
             {
                 JObject settings;
@@ -81,7 +81,7 @@ namespace RiderLauncher
                 }
             }
 
-            return null;
+            return Path.Combine(toolboxPath, "apps", "Rider");
         }
     }
 }
