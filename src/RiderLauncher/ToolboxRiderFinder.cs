@@ -10,12 +10,13 @@ namespace RiderLauncher
 {
     internal static class ToolboxRiderFinder
     {
+        static readonly Version MaxVersion = new Version(32767, 32767, 32767);
         static readonly Regex VersionNumberExtractor = new Regex(@"[0-9]+\.[0-9]+\.[0-9]+");
 
         public static bool TryGetLatestActiveExecutable(out string path)
         {
             path = GetActiveExecutables()
-                .OrderByDescending(f => VersionNumberExtractor.Match(f).Value)
+                .OrderByDescending(f => Version.TryParse(VersionNumberExtractor.Match(f).Value, out var version) ? version : MaxVersion)
                 .FirstOrDefault();
             return path != null;
         }
@@ -52,10 +53,10 @@ namespace RiderLauncher
 
         private static string GetAppLocation()
         {
-            var settingsPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                @"JetBrains\Toolbox\.settings.json"
-            );
+            var toolboxPath = GetToolboxPath();
+
+            var settingsPath = Path.Combine(toolboxPath, ".settings.json");
+            
             if (File.Exists(settingsPath))
             {
                 JObject settings;
@@ -70,10 +71,7 @@ namespace RiderLauncher
                 if (settings.ContainsKey("install_location"))
                 {
                     var toolboxInstallLocation = settings["install_location"].Value<string>();
-                    var folderPath = Path.Combine(
-                        toolboxInstallLocation.Replace('/', '\\'),
-                        "apps", "Rider"
-                    );
+                    var folderPath = Path.Combine(toolboxInstallLocation, "apps", "Rider");
                     if (Directory.Exists(folderPath))
                     {
                         return folderPath;
@@ -81,9 +79,22 @@ namespace RiderLauncher
                 }
             }
 
-            return Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                @"JetBrains\Toolbox\apps\Rider");
+            return Path.Combine(toolboxPath, "apps", "Rider");
+        }
+
+        private static string GetToolboxPath()
+        {
+            switch (Environment.OSVersion.Platform)
+            {
+                case PlatformID.Unix:
+                    return Path.Combine(Environment.GetEnvironmentVariable("HOME"), ".local/share/JetBrains/Toolbox");
+                case PlatformID.Win32NT:
+                    return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"JetBrains\Toolbox");
+                case PlatformID.MacOSX:
+                    return Path.Combine(Environment.GetEnvironmentVariable("HOME"), "Library/Application Support/JetBrains/Toolbox");
+                default:
+                    return null;
+            }
         }
     }
 }
