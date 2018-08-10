@@ -81,7 +81,9 @@ namespace RiderLauncher
                 }
             }
 
-            return null;
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                @"JetBrains\Toolbox\apps\Rider");
         }
     }
 }
