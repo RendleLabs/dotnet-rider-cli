@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -10,8 +11,8 @@ namespace RiderLauncher
 {
     internal static class ToolboxRiderFinder
     {
-        static readonly Version MaxVersion = new Version(32767, 32767, 32767);
-        static readonly Regex VersionNumberExtractor = new Regex(@"[0-9]+\.[0-9]+\.[0-9]+");
+        private static readonly Version MaxVersion = new Version(32767, 32767, 32767);
+        private static readonly Regex VersionNumberExtractor = new Regex(@"[0-9]+\.[0-9]+\.[0-9]+");
 
         public static bool TryGetLatestActiveExecutable(out string path)
         {
@@ -21,9 +22,11 @@ namespace RiderLauncher
             return path != null;
         }
 
-        public static IEnumerable<string> GetActiveExecutables()
+        private static IEnumerable<string> GetActiveExecutables()
         {
             var appLocation = GetAppLocation();
+
+            if (string.IsNullOrWhiteSpace(appLocation)) yield break;
 
             foreach (var channelSettingsFile in Directory.EnumerateFiles(appLocation, ".channel.settings.json", SearchOption.AllDirectories))
             {
@@ -56,7 +59,7 @@ namespace RiderLauncher
             var toolboxPath = GetToolboxPath();
 
             var settingsPath = Path.Combine(toolboxPath, ".settings.json");
-            
+
             if (File.Exists(settingsPath))
             {
                 JObject settings;
@@ -71,30 +74,39 @@ namespace RiderLauncher
                 if (settings.ContainsKey("install_location"))
                 {
                     var toolboxInstallLocation = settings["install_location"].Value<string>();
-                    var folderPath = Path.Combine(toolboxInstallLocation, "apps", "Rider");
-                    if (Directory.Exists(folderPath))
+                    if (!string.IsNullOrWhiteSpace(toolboxInstallLocation))
                     {
-                        return folderPath;
+                        return NullIfNotExists(Path.Combine(toolboxInstallLocation, "apps", "Rider"));
                     }
                 }
             }
 
-            return Path.Combine(toolboxPath, "apps", "Rider");
+            return NullIfNotExists(Path.Combine(toolboxPath, "apps", "Rider"));
         }
+
+        private static string NullIfNotExists(string path) => (!string.IsNullOrWhiteSpace(path)) && Directory.Exists(path) ? path : null;
 
         private static string GetToolboxPath()
         {
-            switch (Environment.OSVersion.Platform)
-            {
-                case PlatformID.Unix:
-                    return Path.Combine(Environment.GetEnvironmentVariable("HOME"), ".local/share/JetBrains/Toolbox");
-                case PlatformID.Win32NT:
-                    return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"JetBrains\Toolbox");
-                case PlatformID.MacOSX:
-                    return Path.Combine(Environment.GetEnvironmentVariable("HOME"), "Library/Application Support/JetBrains/Toolbox");
-                default:
-                    return null;
-            }
+            if (OperatingSystem.IsWindows())
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"JetBrains\Toolbox");
+            if (OperatingSystem.IsLinux())
+                return Path.Combine(Environment.GetEnvironmentVariable("HOME"), ".local/share/JetBrains/Toolbox");
+            if (OperatingSystem.IsMacOS())
+                return Path.Combine(Environment.GetEnvironmentVariable("HOME"), "Library/Application Support/JetBrains/Toolbox");
+            return null;
         }
+    }
+
+    public static class OperatingSystem
+    {
+        public static bool IsWindows() =>
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
+        public static bool IsMacOS() =>
+            RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+
+        public static bool IsLinux() =>
+            RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
     }
 }

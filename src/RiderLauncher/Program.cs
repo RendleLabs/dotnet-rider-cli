@@ -11,11 +11,6 @@ namespace RiderLauncher
 
         static void Main(string[] args)
         {
-            if (Environment.OSVersion.Platform != PlatformID.Win32NT)
-            {
-                Console.Error.WriteLine($"This tool only works on Windows. {IfThisMakesYouSad}");
-            }
-            
             if (ToolboxRiderFinder.TryGetLatestActiveExecutable(out var activeExecutable))
             {
                 StartRider(activeExecutable, args);
