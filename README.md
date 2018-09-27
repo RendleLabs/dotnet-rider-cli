@@ -10,8 +10,8 @@ Windows-only for now:
 λ dotnet tool install -g dotnet-rider-cli
 ```
 
-**Using a Mac or Linux?**
-You can enable lauching Rider via command line by going to `Tools > Create Command-line Launcher`.
+**Using a Mac or Linux?**  
+You can enable lauching Rider via command line by going to `Tools > Create Command-line Launcher`, for more information see [here](https://www.jetbrains.com/help/rider/Working_with_the_IDE_Features_from_Command_Line.html).
 
 ## Usage
 
