@@ -10,6 +10,9 @@ Windows-only for now:
 λ dotnet tool install -g dotnet-rider-cli
 ```
 
+**Using a Mac or Linux?**
+You can enable lauching Rider via command line by going to `Tools > Create Command-line Launcher`.
+
 ## Usage
 
 To open the current directory:
