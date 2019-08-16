@@ -28,27 +28,48 @@ namespace RiderLauncher
 
             if (string.IsNullOrWhiteSpace(appLocation)) yield break;
 
-            foreach (var channelSettingsFile in Directory.EnumerateFiles(appLocation, ".channel.settings.json", SearchOption.AllDirectories))
+            var pathsFromChannelSettingsJson = GetRiderPaths(appLocation, ".channel.settings.json", jsonData =>
             {
-                JObject settings;
-                using (var reader = File.OpenText(channelSettingsFile))
+                if (jsonData["active-application"] is JObject activeApp && activeApp["builds"] is JArray buildArray)
                 {
-                    using (var jsonReader = new JsonTextReader(reader))
-                    {
-                        settings = JObject.Load(jsonReader);
-                    }
+                    return buildArray.Values<string>();
                 }
 
-                var channelDirectory = Path.GetDirectoryName(channelSettingsFile);
-                if (settings["active-application"] is JObject activeApp && activeApp["builds"] is JArray buildArray)
+                return Enumerable.Empty<string>();
+            });
+
+            var pathsFromHistoryJson = GetRiderPaths(appLocation, ".history.json", jsonData =>
+            {
+                if (jsonData.ContainsKey("history"))
                 {
-                    foreach (string build in buildArray.Values<string>())
+                    return jsonData["history"]
+                        .Where(x => ((string) x["action"] == "install" || (string) x["action"] == "update") &&
+                                    (string) x["item"]?["id"] == "Rider")
+                        .Select(x => (string) x["item"]?["build"]);
+                }
+                
+                return Enumerable.Empty<string>();
+            });
+
+            foreach (var riderPath in pathsFromChannelSettingsJson.Concat(pathsFromHistoryJson))
+            {
+                yield return riderPath;
+            }
+        }
+
+        private static IEnumerable<string> GetRiderPaths(string basePath, string jsonFileName, Func<JObject, IEnumerable<string>> getRiderBuilds)
+        {
+            foreach (var jsonFile in Directory.EnumerateFiles(basePath, jsonFileName, SearchOption.AllDirectories))
+            {
+                var jsonData = ReadJson(jsonFile);
+                var jsonFileDirectory = Path.GetDirectoryName(jsonFile);
+                
+                foreach (var build in getRiderBuilds(jsonData).Where(x => string.IsNullOrEmpty(x) == false))
+                {
+                    var riderPath = Path.Combine(jsonFileDirectory, build, "bin", "rider64.exe");
+                    if (File.Exists(riderPath))
                     {
-                        var riderPath = Path.Combine(channelDirectory, build, "bin", "rider64.exe");
-                        if (File.Exists(riderPath))
-                        {
-                            yield return riderPath;
-                        }
+                        yield return riderPath;
                     }
                 }
             }
@@ -62,15 +83,8 @@ namespace RiderLauncher
 
             if (File.Exists(settingsPath))
             {
-                JObject settings;
-                using (var reader = File.OpenText(settingsPath))
-                {
-                    using (var jsonReader = new JsonTextReader(reader))
-                    {
-                        settings = JObject.Load(jsonReader);
-                    }
-                }
-
+                JObject settings = ReadJson(settingsPath);
+                    
                 if (settings.ContainsKey("install_location"))
                 {
                     var toolboxInstallLocation = settings["install_location"].Value<string>();
@@ -82,6 +96,17 @@ namespace RiderLauncher
             }
 
             return NullIfNotExists(Path.Combine(toolboxPath, "apps", "Rider"));
+        }
+
+        private static JObject ReadJson(string file)
+        {
+            using (var reader = File.OpenText(file))
+            {
+                using (var jsonReader = new JsonTextReader(reader))
+                {
+                    return JObject.Load(jsonReader);
+                }
+            }
         }
 
         private static string NullIfNotExists(string path) => (!string.IsNullOrWhiteSpace(path)) && Directory.Exists(path) ? path : null;
